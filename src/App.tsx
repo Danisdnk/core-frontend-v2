@@ -10,10 +10,9 @@ function App() {
     <BrowserRouter>
       <div className="App">
         <Routes>
-          {/* Ruta de login (ruta raíz) */}
+       
           <Route path="/" element={<Login />} />
-
-          {/* Ruta protegida o de home */}
+        
           <Route path="/home" element={<CardHome />} />
         </Routes>
       </div>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useLogin } from "../hooks/useLogin";
+import banner from "../assets/bf.png"; // asegúrate de que este path exista
 
 export default function Login() {
   const { login, loading, error } = useLogin();
@@ -13,49 +14,59 @@ export default function Login() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-base-200">
-      <form
-        onSubmit={handleSubmit}
-        className="fieldset bg-base-100 border-base-300 rounded-box border p-6 w-80 shadow-md"
-      >
-        <legend className="fieldset-legend text-lg font-semibold mb-3">
-          Login
-        </legend>
+    <div className="relative flex justify-center items-center min-h-screen bg-base-200">
+      {/* Fondo superior (mitad de la pantalla) */}
+      <img
+        src={banner}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="pointer-events-none select-none absolute inset-x-0 top-0 w-full h-1/2 object-cover z-0"
+      />
 
-        <label className="label">Email</label>
-        <input
-          type="email"
-          className="input input-bordered w-full"
-          placeholder="email@dominio.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        <label className="label mt-2">Password</label>
-        <input
-          type="password"
-          className="input input-bordered w-full"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        {error && (
-          <p className="text-error text-sm mt-3 text-center">
-            {error}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          className="btn btn-neutral w-full mt-4"
-          disabled={loading}
+      {/* Contenido */}
+      <div className="relative z-10 flex justify-center items-center w-full">
+        <form
+          onSubmit={handleSubmit}
+          className="fieldset bg-base-100 border-base-300 rounded-box border p-6 w-80 shadow-md"
         >
-          {loading ? "Ingresando..." : "Login"}
-        </button>
-      </form>
+          <legend className="fieldset-legend text-lg font-semibold mb-3">
+            Login
+          </legend>
+
+          <label className="label">Email</label>
+          <input
+            type="email"
+            className="input input-bordered w-full"
+            placeholder="email@dominio.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <label className="label mt-2">Password</label>
+          <input
+            type="password"
+            className="input input-bordered w-full"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          {error && (
+            <p className="text-error text-sm mt-3 text-center">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            className="btn btn-neutral w-full mt-4"
+            disabled={loading}
+          >
+            {loading ? "Ingresando..." : "Login"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
