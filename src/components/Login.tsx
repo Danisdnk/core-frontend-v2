@@ -1,89 +1,61 @@
-import React from "react";
-import { useNavigate } from "react-router-dom"; 
-import bg from "../assets/fondo.jpeg";
+import React, { useState } from "react";
+import { useLogin } from "../hooks/useLogin";
 
 export default function Login() {
-  const navigate = useNavigate(); // opcional
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const { login, loading, error } = useLogin();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      // TODO: reemplazá por tu endpoint real
-      // const resp = await fetch("/api/auth/login", { ... });
-      // if (!resp.ok) throw new Error("Credenciales inválidas");
-      // const data = await resp.json();
-
-      // Simulación
-      await new Promise((r) => setTimeout(r, 800));
-
-      // Si usás router:
-      navigate("/home", { replace: true });
-      // Si NO usás router, podrías hacer:
-      // window.location.href = "/home";
-    } catch (err: any) {
-      setError(err?.message ?? "Error al iniciar sesión");
-    } finally {
-      setLoading(false);
-    }
+    if (!email || !password) return;
+    await login({ email, password });
   };
 
   return (
-    <div
-      className="relative min-h-screen flex items-center justify-center"
-      style={{
-        backgroundImage: `url(${bg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      {/* Overlay para mejorar contraste */}
-      <div className="absolute inset-0 bg-base-100/60 backdrop-blur-sm" />
+    <div className="flex justify-center items-center min-h-screen bg-base-200">
+      <form
+        onSubmit={handleSubmit}
+        className="fieldset bg-base-100 border-base-300 rounded-box border p-6 w-80 shadow-md"
+      >
+        <legend className="fieldset-legend text-lg font-semibold mb-3">
+          Login
+        </legend>
 
-      {/* Contenido */}
-      <div className="relative z-10 w-full max-w-sm px-4">
-        <form onSubmit={handleSubmit}>
-          <fieldset className="fieldset bg-base-200/90 border-base-300 rounded-box border p-6 shadow-lg">
-            <legend className="fieldset-legend text-xl font-semibold">Login</legend>
+        <label className="label">Email</label>
+        <input
+          type="email"
+          className="input input-bordered w-full"
+          placeholder="email@dominio.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-            <label className="label">Email</label>
-            <input
-              type="email"
-              className="input input-bordered"
-              placeholder="email@dominio.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+        <label className="label mt-2">Password</label>
+        <input
+          type="password"
+          className="input input-bordered w-full"
+          placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-            <label className="label mt-2">Password</label>
-            <input
-              type="password"
-              className="input input-bordered"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+        {error && (
+          <p className="text-error text-sm mt-3 text-center">
+            {error}
+          </p>
+        )}
 
-            {error && <p className="text-error text-sm mt-3">{error}</p>}
-
-            <button
-              type="submit"
-              className="btn btn-neutral mt-5 w-full"
-              disabled={loading}
-            >
-              {loading ? "Ingresando..." : "Login"}
-            </button>
-          </fieldset>
-        </form>
-      </div>
+        <button
+          type="submit"
+          className="btn btn-neutral w-full mt-4"
+          disabled={loading}
+        >
+          {loading ? "Ingresando..." : "Login"}
+        </button>
+      </form>
     </div>
   );
 }

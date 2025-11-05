@@ -15,6 +15,7 @@ interface CardProps {
   onButtonClick?: () => void;
 }
 
+
 export const Card: React.FC<CardProps> = ({
   title,
   badgeText,

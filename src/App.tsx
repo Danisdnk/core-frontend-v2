@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import "./App.css";
+import "./index.css";
 import CardHome from "./components/CardHome";
 import Login from "./components/Login";
 
 function App() {
+ //https://jtseq9puk0.execute-api.us-east-1.amazonaws.com/api
   // document.documentElement.setAttribute("data-theme", "light");
   return (
     <BrowserRouter>
