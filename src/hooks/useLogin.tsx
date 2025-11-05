@@ -17,7 +17,6 @@ export function useLogin(): UseLoginReturn {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // ✅ URL base real
   const urlbase = "https://jtseq9puk0.execute-api.us-east-1.amazonaws.com/api";
 
   const login = async ({ email, password }: LoginCredentials) => {
@@ -33,7 +32,7 @@ export function useLogin(): UseLoginReturn {
 
       const data = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !data.success) {
         const message =
           data?.message ||
           data?.error ||
@@ -41,13 +40,15 @@ export function useLogin(): UseLoginReturn {
         throw new Error(message);
       }
 
-      if (!data?.token) throw new Error("No se recibió token de autenticación");
+      if (!data.access_token) {
+        throw new Error("No se recibió token de autenticación");
+      }
 
-      // Guardar 
-      localStorage.setItem("token", data.token);
-      if (data.user) localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      localStorage.setItem("token_type", data.token_type);
+      localStorage.setItem("expires_in", data.expires_in.toString());
 
-      // Redirigir a /home
       navigate("/home", { replace: true });
     } catch (err: any) {
       console.error("Error de login:", err);
