@@ -1,26 +1,27 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { decodeJwtUtf8, formatUnixTimestamp, type JwtPayload } from "../utils/index";
+import { decodeJwtUtf8, formatUnixTimestamp, type JwtPayload } from "../utils";
 
-export default function Alumnos() {
+type PortalPageProps = {
+  title: string;
+  showToken?: boolean;
+};
+
+export default function PortalPage({ title, showToken = true }: PortalPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
-
   const [token, setToken] = useState<string | null>(null);
   const [decoded, setDecoded] = useState<JwtPayload | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const jwt = params.get("token");
-
     if (!jwt) {
       navigate("/", { replace: true });
       return;
     }
-
     setToken(jwt);
     localStorage.setItem("access_token", jwt);
-
     const payload = decodeJwtUtf8(jwt);
     if (payload) setDecoded(payload);
   }, [location.search, navigate]);
@@ -30,18 +31,22 @@ export default function Alumnos() {
 
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-base-200">
-      <div className="card bg-base-100 shadow-lg p-8 w-96 text-center">
-        <h1 className="text-2xl font-bold text-primary mb-4">Portal de Alumnos</h1>
+      <div className="card bg-base-100 shadow-lg p-8 w-[28rem] max-w-[90vw] text-center">
+        <h1 className="text-2xl font-bold text-primary mb-4">{title}</h1>
 
         {token && decoded ? (
           <>
-            <p className="text-sm text-gray-500 mb-4">Token JWT recibido correctamente:</p>
-            <textarea
-              readOnly
-              className="textarea textarea-bordered w-full text-xs"
-              rows={3}
-              value={token}
-            />
+            {showToken && (
+              <>
+                <p className="text-sm text-gray-500 mb-4">Token JWT recibido correctamente:</p>
+                <textarea
+                  readOnly
+                  className="textarea textarea-bordered w-full text-xs"
+                  rows={3}
+                  value={token}
+                />
+              </>
+            )}
 
             <h2 className="text-lg font-semibold mt-5 mb-2 text-primary">Datos del usuario</h2>
 
@@ -53,10 +58,10 @@ export default function Alumnos() {
               {decoded.career?.uuid && <p><strong>career.uuid:</strong> {decoded.career.uuid}</p>}
               {decoded.career?.name && <p><strong>career.name:</strong> {decoded.career.name}</p>}
               {decoded.iat !== undefined && (
-                <p><strong>iat:</strong> {iatFormatted ?? decoded.iat}</p>
+                <p><strong>iat:</strong> {iatFormatted ?? String(decoded.iat)}</p>
               )}
               {decoded.exp !== undefined && (
-                <p><strong>exp:</strong> {expFormatted ?? decoded.exp}</p>
+                <p><strong>exp:</strong> {expFormatted ?? String(decoded.exp)}</p>
               )}
             </div>
           </>
