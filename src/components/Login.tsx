@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLogin } from "../hooks/useLogin";
-import banner from "../assets/bf.png"; // asegúrate de que este path exista
+import banner from "../assets/bf.png"; 
 
 export default function Login() {
   const { login, loading, error } = useLogin();
@@ -15,7 +15,6 @@ export default function Login() {
 
   return (
     <div className="relative flex justify-center items-center min-h-screen bg-base-200">
-      {/* Fondo superior (mitad de la pantalla) */}
       <img
         src={banner}
         alt=""
@@ -24,7 +23,6 @@ export default function Login() {
         className="pointer-events-none select-none absolute inset-x-0 top-0 w-full h-1/2 object-cover z-0"
       />
 
-      {/* Contenido */}
       <div className="relative z-10 flex justify-center items-center w-full">
         <form
           onSubmit={handleSubmit}
