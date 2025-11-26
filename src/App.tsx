@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
 import CardHome from "./components/CardHome";
 import Login from "./components/Login";
-import PortalPage from "./components/PortalPage";
 
 function App() {
   //https://jtseq9puk0.execute-api.us-east-1.amazonaws.com/api
