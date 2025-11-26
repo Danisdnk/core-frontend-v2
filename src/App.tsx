@@ -13,15 +13,7 @@ function App() {
         <Routes>
 
           <Route path="/" element={<Login />} />
-          <Route path="/home" element={<CardHome />} />
-          <Route path="/alumnos" element={<PortalPage title="Portal de Alumnos" />} />
-          <Route path="/docente" element={<PortalPage title="Portal Docente" />} />
-          <Route path="/tienda" element={<PortalPage title="Portal Tienda" />} />
-          <Route path="/comedor" element={<PortalPage title="Portal Comedor" />} />
-          <Route path="/biblioteca" element={<PortalPage title="Portal Biblioteca" />} />
-          <Route path="/eventos" element={<PortalPage title="Portal Eventos" />} />
-          <Route path="/analitica" element={<PortalPage title="Portal Analítica" />} />
-          <Route path="/gestion" element={<PortalPage title="Portal Gestión" />} />
+          <Route path="/home" element={<CardHome />} />    
 
         </Routes>
       </div>
