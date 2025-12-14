@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+// import { Mail, Phone, MapPin, Clock } from "lucide-react";
 
 export default function Footer() {
   return (

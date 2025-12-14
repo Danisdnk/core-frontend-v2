@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLogin } from "../hooks/useLogin";
-import banner from "../assets/bf.png"; 
+// import banner from "../assets/bf.png"; 
 
 export default function Login() {
   const { login, loading, error } = useLogin();
