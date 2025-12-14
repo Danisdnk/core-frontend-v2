@@ -97,6 +97,35 @@ export default function Home() {
         </div>
       </div> */}
 
+      {/* HERO institucional */}
+      <section className="px-6 pt-6">
+        <div className="relative overflow-hidden rounded-2xl shadow-md">
+          {/* Imagen */}
+          <img
+            src="https://keystoneacademic-res.cloudinary.com/image/upload/element/11/117284_UADEDia4.jpg"
+            alt="UADE"
+            className="h-56 w-full object-cover sm:h-64 lg:h-72"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+
+          {/* Overlay para contraste */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/55 to-transparent" />
+
+          {/* Contenido */}
+          <div className="absolute inset-0 flex items-center">
+            <div className="px-6 py-6 sm:px-10 max-w-3xl">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
+                Bienvenido a CampusConnect
+              </h1>
+              <p className="mt-2 text-white/90 text-sm sm:text-base">
+                Accedé a los portales de la universidad desde un único lugar. Hacé clic en “Acceder”
+                para ingresar al portal correspondiente.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
       <div className="py-10 px-6 flex-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
           {visibleCards.map((card) => (
