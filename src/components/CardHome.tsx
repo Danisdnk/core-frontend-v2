@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 // import Carousel from "./Carousel";
 import { Card } from "./Card";
+import Footer from "./Footer";
 import { getUserFromToken, filterCardsByRole } from "../utils";
 import logo from "../assets/uadelogo.png";
 
@@ -56,7 +57,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-base-200">
+    <div className="min-h-screen bg-base-200 flex flex-col">
       <nav className="navbar bg-primary shadow-md sticky top-0 z-50">
         <div className="flex-1">
           <span className="btn btn-ghost normal-case text-xl text-white">
@@ -96,7 +97,7 @@ export default function Home() {
         </div>
       </div> */}
 
-      <div className="py-10 px-6">
+      <div className="py-10 px-6 flex-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
           {visibleCards.map((card) => (
             <Card
@@ -109,6 +110,8 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
