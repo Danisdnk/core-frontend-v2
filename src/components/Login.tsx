@@ -15,13 +15,13 @@ export default function Login() {
 
   return (
     <div className="relative flex justify-center items-center min-h-screen bg-base-200">
-      <img
+      {/* <img
         src={banner}
         alt=""
         aria-hidden
         draggable={false}
         className="pointer-events-none select-none absolute inset-x-0 top-0 w-full h-1/2 object-cover z-0"
-      />
+      /> */}
 
       <div className="relative z-10 flex justify-center items-center w-full">
         <form
@@ -29,7 +29,7 @@ export default function Login() {
           className="fieldset bg-base-100 border-base-300 rounded-box border p-6 w-80 shadow-md"
         >
           <legend className="fieldset-legend text-lg font-semibold mb-3">
-            Login
+            CampusConnect Login
           </legend>
 
           <label className="label">Email</label>
@@ -58,7 +58,7 @@ export default function Login() {
 
           <button
             type="submit"
-            className="btn btn-neutral w-full mt-4"
+            className="btn btn-primary w-full mt-4"
             disabled={loading}
           >
             {loading ? "Ingresando..." : "Login"}

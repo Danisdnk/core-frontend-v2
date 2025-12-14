@@ -10,9 +10,10 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import Carousel from "./Carousel";
+// import Carousel from "./Carousel";
 import { Card } from "./Card";
 import { getUserFromToken, filterCardsByRole } from "../utils";
+import logo from "../assets/uadelogo.png";
 
 interface CardData {
   id: number;
@@ -56,16 +57,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <nav className="navbar bg-base-100 shadow-md sticky top-0 z-50">
+      <nav className="navbar bg-primary shadow-md sticky top-0 z-50">
         <div className="flex-1">
-          <span className="btn btn-ghost normal-case text-xl font-bold text-primary">UADE</span>
+          <span className="btn btn-ghost normal-case text-xl text-white">
+            <img src={logo} alt="UADE" className="w-8 h-8 mr-2 object-contain" />
+            CampusConnect
+          </span>
         </div>
 
         <div className="flex-none">
           <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost gap-2">
-              <span className="text-sm font-medium text-base-content truncate max-w-[160px]">{name}</span>
-              <User className="w-6 h-6" />
+            <div tabIndex={0} role="button" className="btn btn-ghost gap-2 text-white">
+              <span className="text-sm font-medium text-white truncate max-w-[160px]">{name}</span>
+              <User className="w-6 h-6 text-white" />
             </div>
 
             <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-48 mt-2 z-[60]">
@@ -85,12 +89,12 @@ export default function Home() {
           </div>
         </div>
       </nav>
-
-      <div className="px-6 pt-6">
+      {/* Lo saco por ahora, yo no lo agregaria */}
+      {/* <div className="px-6 pt-6">
         <div className="rounded-xl overflow-hidden shadow-md">
           <Carousel />
         </div>
-      </div>
+      </div> */}
 
       <div className="py-10 px-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
