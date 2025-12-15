@@ -28,7 +28,7 @@ export default function Login() {
       return;
     }
 
-    if (dest) window.location.href = dest; //aca deberia estar el repreguntar si continuar con la sesion antes de mandar a este dest
+    // if (dest) window.location.href = dest; //aca deberia estar el repreguntar si continuar con la sesion antes de mandar a este dest
     if (!dest) navigate("/home", { replace: true });
   }, [capturedRedirect, navigate]);
 
