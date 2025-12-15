@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useLogin } from "../hooks/useLogin";
-// import banner from "../assets/bf.png"; 
+// import banner from "../assets/bf.png";
 
 export default function Login() {
   const { login, loading, error } = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,14 +16,6 @@ export default function Login() {
 
   return (
     <div className="relative flex justify-center items-center min-h-screen bg-base-200">
-      {/* <img
-        src={banner}
-        alt=""
-        aria-hidden
-        draggable={false}
-        className="pointer-events-none select-none absolute inset-x-0 top-0 w-full h-1/2 object-cover z-0"
-      /> */}
-
       <div className="relative z-10 flex justify-center items-center w-full">
         <form
           onSubmit={handleSubmit}
@@ -43,14 +36,27 @@ export default function Login() {
           />
 
           <label className="label mt-2">Password</label>
-          <input
-            type="password"
-            className="input input-bordered w-full"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              className="input input-bordered w-full pr-10"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60 hover:text-base-content"
+              aria-label={
+                showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+              }
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
+          </div>
 
           {error && (
             <p className="text-error text-sm mt-3 text-center">{error}</p>
