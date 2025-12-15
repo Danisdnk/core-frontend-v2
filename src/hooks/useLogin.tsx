@@ -12,8 +12,6 @@ interface UseLoginReturn {
   error: string | null;
 }
 
-const urlbase = "https://jtseq9puk0.execute-api.us-east-1.amazonaws.com/api";
-
 const REDIRECT_KEY = "post_login_redirect_url";
 
 function log(...args: any[]) {
@@ -70,14 +68,12 @@ export function useLogin(): UseLoginReturn {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Se ejecuta una sola vez: captura ?redirectUrl=... y lo persiste
+  const urlbase = "https://jtseq9puk0.execute-api.us-east-1.amazonaws.com/api";
   const capturedRedirect = useMemo(() => captureRedirectUrlOnce(), []);
 
   const login = async ({ email, password }: LoginCredentials) => {
     setLoading(true);
     setError(null);
-
-    log("Iniciando login. email:", email);
 
     try {
       const response = await fetch(`${urlbase}/auth/login`, {
@@ -87,7 +83,6 @@ export function useLogin(): UseLoginReturn {
       });
 
       const data = await response.json();
-      log("Respuesta /auth/login:", data);
 
       if (!response.ok || !data.success) {
         const message =
@@ -105,7 +100,6 @@ export function useLogin(): UseLoginReturn {
       localStorage.setItem("refresh_token", data.refresh_token);
       localStorage.setItem("token_type", data.token_type);
       localStorage.setItem("expires_in", data.expires_in.toString());
-      sessionStorage.setItem("external_access_token", data.access_token);
 
       log("Tokens guardados (localStorage + sessionStorage).");
 
@@ -133,11 +127,10 @@ export function useLogin(): UseLoginReturn {
       log("Redirigiendo default a /home");
       navigate("/home", { replace: true });
     } catch (err: any) {
-      console.error("[CORE-LOGIN] Error:", err);
+      console.error("Error de login:", err);
       setError(err.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
-      log("Fin login.");
     }
   };
 
