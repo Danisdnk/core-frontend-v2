@@ -1,146 +1,187 @@
-import { useMemo } from "react";
-import {
-  User,
-  BookOpen,
-  ShoppingBag,
-  Coffee,
-  Library,
-  Calendar,
-  BarChart3,
-  Settings,
-  LogOut,
-} from "lucide-react";
-// import Carousel from "./Carousel";
-import { Card } from "./Card";
-import Footer from "./Footer";
-import { getUserFromToken, filterCardsByRole } from "../utils";
-import logo from "../assets/uadelogo.png";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-interface CardData {
-  id: number;
-  title: string;
-  icon: React.ReactNode;
-  url: string;
+interface LoginCredentials {
+  email: string;
+  password: string;
 }
 
-export default function Home() {
-  const { role, name } = useMemo(() => getUserFromToken(), []);
+interface UseLoginReturn {
+  login: (credentials: LoginCredentials) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+}
 
-  const cards: CardData[] = [
-    { id: 1, title: "Portal docente", icon: <User className="w-12 h-12 text-primary" />, url: "https://campus-connect-front-docentes.vercel.app" },
-    { id: 2, title: "Portal de alumnos", icon: <BookOpen className="w-12 h-12 text-info" />, url: "https://student-portal-front-production.up.railway.app/misCursos" },
-    { id: 3, title: "Portal Tienda", icon: <ShoppingBag className="w-12 h-12 text-warning" />, url: "https://uade-store.vercel.app" },
-    { id: 4, title: "Portal Comedor", icon: <Coffee className="w-12 h-12 text-secondary" />, url: "https://proyecto-react-shadcn.vercel.app" },
-    { id: 5, title: "Portal Biblioteca", icon: <Library className="w-12 h-12 text-primary" />, url: "https://biblioteca-uade.vercel.app" },
-    { id: 6, title: "Portal eventos", icon: <Calendar className="w-12 h-12 text-accent" />, url: "https://desap2-eventos-front.onrender.com" },
-    { id: 7, title: "Portal analítica", icon: <BarChart3 className="w-12 h-12 text-info" />, url: "https://campus-connect-da-ii.up.railway.app" },
-    { id: 8, title: "Portal Gestión", icon: <Settings className="w-12 h-12 text-success" />, url: "https://backoffice-production-ui.up.railway.app" },
-  ];
+const urlbase = "https://jtseq9puk0.execute-api.us-east-1.amazonaws.com/api";
 
-  const visibleCards = useMemo(() => filterCardsByRole(role, cards), [role]);
+const REDIRECT_KEY = "post_login_redirect_url";
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    window.location.href = "/";
-  };
+const ALLOWED_ORIGINS = new Set<string>([
+  "https://campus-connect-front-docentes.vercel.app",
+  "https://student-portal-front-production.up.railway.app",
+  "https://uade-store.vercel.app",
+  "https://proyecto-react-shadcn.vercel.app",
+  "https://biblioteca-uade.vercel.app",
+  "https://desap2-eventos-front.onrender.com",
+  "https://campus-connect-da-ii.up.railway.app",
+  "https://backoffice-production-ui.up.railway.app",
+]);
 
-  const openExternal = (baseUrl: string) => {
-    const token = localStorage.getItem("access_token");
+function log(...args: any[]) {
+  console.log("[CORE-LOGIN]", ...args);
+}
 
-    if (token) {
-      sessionStorage.setItem("external_access_token", token);
+function readRedirectUrlParam(): string | null {
+  const qs = new URLSearchParams(window.location.search);
+  const raw = qs.get("redirectUrl");
+  if (!raw) return null;
+
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function safeUrl(raw: string): URL | null {
+  try {
+    return new URL(raw);
+  } catch {
+    return null;
+  }
+}
+
+function isLocalhostRoot(u: URL) {
+  return u.origin === "http://localhost:5173" && (u.pathname === "/" || u.pathname === "");
+}
+
+function isAllowed(u: URL) {
+  return ALLOWED_ORIGINS.has(u.origin);
+}
+
+function appendToken(dest: string, token: string) {
+  const u = new URL(dest);
+  u.searchParams.set("access_token", token);
+  return u.toString();
+}
+
+/**
+ * Captura redirectUrl del queryparam y lo guarda en sessionStorage.
+ * Llamalo desde el hook (se ejecuta 1 vez) y te cubre todo el flujo.
+ */
+function captureRedirectUrlOnce(): string | null {
+  const incoming = readRedirectUrlParam();
+  log("redirectUrl param (decoded):", incoming);
+
+  if (!incoming) return null;
+
+  const parsed = safeUrl(incoming);
+  if (!parsed) {
+    log("redirectUrl inválido (no parsea como URL). Se ignora.");
+    return null;
+  }
+
+  if (!isAllowed(parsed)) {
+    log("redirectUrl NO permitido (origin no whitelisted):", parsed.origin);
+    return null;
+  }
+
+  sessionStorage.setItem(REDIRECT_KEY, parsed.toString());
+  log("redirectUrl guardado en sessionStorage:", parsed.toString());
+  return parsed.toString();
+}
+
+export function useLogin(): UseLoginReturn {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  // Se ejecuta una sola vez: captura ?redirectUrl=... y lo persiste
+  const capturedRedirect = useMemo(() => captureRedirectUrlOnce(), []);
+
+  const login = async ({ email, password }: LoginCredentials) => {
+    setLoading(true);
+    setError(null);
+
+    log("Iniciando login. email:", email);
+
+    try {
+      const response = await fetch(`${urlbase}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      log("Respuesta /auth/login:", data);
+
+      if (!response.ok || !data.success) {
+        const message =
+          data?.message ||
+          data?.error ||
+          "Error de autenticación, verifique sus credenciales";
+        throw new Error(message);
+      }
+
+      if (!data.access_token) {
+        throw new Error("No se recibió token de autenticación");
+      }
+
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      localStorage.setItem("token_type", data.token_type);
+      localStorage.setItem("expires_in", data.expires_in.toString());
+      sessionStorage.setItem("external_access_token", data.access_token);
+
+      log("Tokens guardados (localStorage + sessionStorage).");
+
+      const dest =
+        capturedRedirect ||
+        sessionStorage.getItem(REDIRECT_KEY);
+
+      log("Destino post-login (captured/session):", dest);
+
+      if (dest) {
+        const parsedDest = safeUrl(dest);
+
+        if (!parsedDest) {
+          log("Destino inválido (no parsea). Se ignora y va a /home.");
+          sessionStorage.removeItem(REDIRECT_KEY);
+          navigate("/home", { replace: true });
+          return;
+        }
+
+        // regla: si la url anterior es localhost root => /home
+        if (isLocalhostRoot(parsedDest)) {
+          log("Destino es localhost root => /home");
+          sessionStorage.removeItem(REDIRECT_KEY);
+          navigate("/home", { replace: true });
+          return;
+        }
+
+        // seguridad: solo whitelisted
+        if (isAllowed(parsedDest)) {
+          const target = appendToken(parsedDest.toString(), data.access_token);
+          log("Redirigiendo a portal:", target);
+          sessionStorage.removeItem(REDIRECT_KEY);
+          window.location.href = target;
+          return;
+        }
+
+        log("Destino NO permitido (origin no whitelisted). Se ignora.");
+        sessionStorage.removeItem(REDIRECT_KEY);
+      }
+
+      log("Redirigiendo default a /home");
+      navigate("/home", { replace: true });
+    } catch (err: any) {
+      console.error("[CORE-LOGIN] Error:", err);
+      setError(err.message || "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
+      log("Fin login.");
     }
-
-    const target = `${baseUrl}?JWT=${encodeURIComponent(token ?? "")}`;
-
-    window.location.href = target;
   };
 
-  return (
-    <div className="min-h-screen bg-base-200 flex flex-col">
-      <nav className="navbar bg-primary shadow-md sticky top-0 z-50">
-        <div className="flex-1">
-          <span className="btn btn-ghost normal-case text-xl text-white">
-            <img src={logo} alt="UADE" className="w-8 h-8 mr-2 object-contain" />
-            CampusConnect
-          </span>
-        </div>
-
-        <div className="flex-none">
-          <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost gap-2 text-white">
-              <span className="text-sm font-medium text-white truncate max-w-[160px]">{name}</span>
-              <User className="w-6 h-6 text-white" />
-            </div>
-
-            <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-48 mt-2 z-[60]">
-              <li>
-                <button onClick={() => (window.location.href = "/perfil")} className="justify-start">
-                  <User className="w-4 h-4" />
-                  Perfil
-                </button>
-              </li>
-              <li>
-                <button onClick={handleLogout} className="justify-start text-error">
-                  <LogOut className="w-4 h-4" />
-                  Cerrar sesión
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </nav>
-      {/* Lo saco por ahora, yo no lo agregaria */}
-      {/* <div className="px-6 pt-6">
-        <div className="rounded-xl overflow-hidden shadow-md">
-          <Carousel />
-        </div>
-      </div> */}
-
-      {/* HERO institucional */}
-      <section className="px-6 pt-6">
-        <div className="relative overflow-hidden rounded-2xl shadow-md">
-          {/* Imagen */}
-          <img
-            src="https://keystoneacademic-res.cloudinary.com/image/upload/element/11/117284_UADEDia4.jpg"
-            alt="UADE"
-            className="h-56 w-full object-cover sm:h-64 lg:h-72"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-
-          {/* Overlay para contraste */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/55 to-transparent" />
-
-          {/* Contenido */}
-          <div className="absolute inset-0 flex items-center">
-            <div className="px-6 py-6 sm:px-10 max-w-3xl">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                Bienvenido a CampusConnect
-              </h1>
-              <p className="mt-2 text-white/90 text-sm sm:text-base">
-                Accedé a los portales de la universidad desde un único lugar. Hacé clic en “Acceder”
-                para ingresar al portal correspondiente.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-      <div className="py-10 px-6 flex-1">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
-          {visibleCards.map((card) => (
-            <Card
-              key={card.id}
-              title={card.title}
-              icon={card.icon}
-              buttonText="Acceder"
-              onButtonClick={() => openExternal(card.url)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <Footer />
-    </div>
-  );
+  return { login, loading, error };
 }
