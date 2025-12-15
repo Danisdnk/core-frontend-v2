@@ -16,17 +16,6 @@ const urlbase = "https://jtseq9puk0.execute-api.us-east-1.amazonaws.com/api";
 
 const REDIRECT_KEY = "post_login_redirect_url";
 
-const ALLOWED_ORIGINS = new Set<string>([
-  "https://campus-connect-front-docentes.vercel.app",
-  "https://student-portal-front-production.up.railway.app",
-  "https://uade-store.vercel.app",
-  "https://proyecto-react-shadcn.vercel.app",
-  "https://biblioteca-uade.vercel.app",
-  "https://desap2-eventos-front.onrender.com",
-  "https://campus-connect-da-ii.up.railway.app",
-  "https://backoffice-production-ui.up.railway.app",
-]);
-
 function log(...args: any[]) {
   console.log("[CORE-LOGIN]", ...args);
 }
@@ -35,9 +24,9 @@ function readRedirectUrlParam(): string | null {
   const qs = new URLSearchParams(window.location.search);
   const raw = qs.get("redirectUrl");
   if (!raw) return null;
-
   try {
-    return decodeURIComponent(raw);
+    const once = decodeURIComponent(raw);
+    return once;
   } catch {
     return raw;
   }
@@ -45,34 +34,23 @@ function readRedirectUrlParam(): string | null {
 
 function safeUrl(raw: string): URL | null {
   try {
-    return new URL(raw);
+    const u = new URL(raw);
+    if (!u.pathname) u.pathname = "/";
+    return u;
   } catch {
     return null;
   }
 }
 
-function isLocalhostRoot(u: URL) {
-  return u.origin === "http://localhost:5173" && (u.pathname === "/" || u.pathname === "");
-}
-
-function isAllowed(u: URL) {
-  return ALLOWED_ORIGINS.has(u.origin);
-}
-
 function appendToken(dest: string, token: string) {
   const u = new URL(dest);
-  u.searchParams.set("access_token", token);
+  u.searchParams.set("JWT", token);
   return u.toString();
 }
 
-/**
- * Captura redirectUrl del queryparam y lo guarda en sessionStorage.
- * Llamalo desde el hook (se ejecuta 1 vez) y te cubre todo el flujo.
- */
 function captureRedirectUrlOnce(): string | null {
   const incoming = readRedirectUrlParam();
   log("redirectUrl param (decoded):", incoming);
-
   if (!incoming) return null;
 
   const parsed = safeUrl(incoming);
@@ -81,14 +59,10 @@ function captureRedirectUrlOnce(): string | null {
     return null;
   }
 
-  if (!isAllowed(parsed)) {
-    log("redirectUrl NO permitido (origin no whitelisted):", parsed.origin);
-    return null;
-  }
-
-  sessionStorage.setItem(REDIRECT_KEY, parsed.toString());
-  log("redirectUrl guardado en sessionStorage:", parsed.toString());
-  return parsed.toString();
+  const normalized = parsed.toString();
+  sessionStorage.setItem(REDIRECT_KEY, normalized);
+  log("redirectUrl guardado en sessionStorage:", normalized);
+  return normalized;
 }
 
 export function useLogin(): UseLoginReturn {
@@ -135,9 +109,7 @@ export function useLogin(): UseLoginReturn {
 
       log("Tokens guardados (localStorage + sessionStorage).");
 
-      const dest =
-        capturedRedirect ||
-        sessionStorage.getItem(REDIRECT_KEY);
+      const dest = capturedRedirect || sessionStorage.getItem(REDIRECT_KEY);
 
       log("Destino post-login (captured/session):", dest);
 
@@ -151,25 +123,11 @@ export function useLogin(): UseLoginReturn {
           return;
         }
 
-        // regla: si la url anterior es localhost root => /home
-        if (isLocalhostRoot(parsedDest)) {
-          log("Destino es localhost root => /home");
-          sessionStorage.removeItem(REDIRECT_KEY);
-          navigate("/home", { replace: true });
-          return;
-        }
-
-        // seguridad: solo whitelisted
-        if (isAllowed(parsedDest)) {
-          const target = appendToken(parsedDest.toString(), data.access_token);
-          log("Redirigiendo a portal:", target);
-          sessionStorage.removeItem(REDIRECT_KEY);
-          window.location.href = target;
-          return;
-        }
-
-        log("Destino NO permitido (origin no whitelisted). Se ignora.");
+        const target = appendToken(parsedDest.toString(), data.access_token);
+        log("Redirigiendo a portal:", target);
         sessionStorage.removeItem(REDIRECT_KEY);
+        window.location.href = target;
+        return;
       }
 
       log("Redirigiendo default a /home");
