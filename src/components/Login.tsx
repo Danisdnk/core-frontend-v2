@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLogin } from "../hooks/useLogin";
 import { Eye, EyeOff } from "lucide-react";
-import { getAccessToken, isAccessTokenValid } from "../utils";
+import {
+  getAccessToken,
+  getRefreshToken,
+  isAccessTokenValid,
+  isRefreshTokenValid,
+} from "../utils";
 import { useNavigate } from "react-router-dom";
 import { captureRedirectUrlOnce, REDIRECT_KEY } from "../utils/url.handler";
 
@@ -20,6 +25,9 @@ export default function Login() {
 
     if (!isAccessTokenValid()) {
       console.log("Token Invalido", accessToken);
+      if (!isRefreshTokenValid()) {
+        console.log("resfresh", getRefreshToken());
+      }
 
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");

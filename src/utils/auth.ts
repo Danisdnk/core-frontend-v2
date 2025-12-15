@@ -29,6 +29,10 @@ export function getAccessToken(): string | null {
   return localStorage.getItem("access_token");
 }
 
+export function getRefreshToken(): string | null {
+  return localStorage.getItem("refresh_token");
+}
+
 export function getUserFromToken(): { role: string | null; name: string } {
   const token = getAccessToken();
   const payload = token ? decodeJwtPayload(token) : null;
@@ -103,5 +107,68 @@ export function getTokenValidityInfo(token: string, skewSeconds = 30) {
     exp: payload.exp,
     expiresAt: formatUnixTimestamp(payload.exp),
     secondsLeft: Math.max(0, secondsLeft),
+  };
+}
+
+export function isRefreshTokenValid(skewSeconds = 30): boolean {
+  const token = getRefreshToken();
+  if (!token) return false;
+
+  const payload = decodeJwtUtf8(token);
+  if (!payload) return false;
+
+  if (!payload.jti) return false;
+
+  if (typeof payload.exp !== "number") return false;
+
+  const now = Math.floor(Date.now() / 1000);
+  return now < payload.exp - skewSeconds;
+}
+
+export function getRefreshTokenValidityInfo(token?: string, skewSeconds = 30) {
+  const t = token ?? getRefreshToken();
+  if (!t) {
+    return {
+      valid: false,
+      expired: true,
+      expiresAt: undefined,
+      secondsLeft: 0,
+      hasJti: false,
+    };
+  }
+
+  const payload = decodeJwtUtf8(t);
+  if (!payload) {
+    return {
+      valid: false,
+      expired: true,
+      expiresAt: undefined,
+      secondsLeft: 0,
+      hasJti: false,
+    };
+  }
+
+  const hasJti = Boolean(payload.jti);
+  const exp = typeof payload.exp === "number" ? payload.exp : undefined;
+
+  if (!exp) {
+    return {
+      valid: false,
+      expired: true,
+      expiresAt: undefined,
+      secondsLeft: 0,
+      hasJti,
+    };
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const expired = now >= exp - skewSeconds;
+
+  return {
+    valid: !expired && hasJti,
+    expired,
+    expiresAt: formatUnixTimestamp(exp),
+    secondsLeft: Math.max(0, exp - now),
+    hasJti,
   };
 }
