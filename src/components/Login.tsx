@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLogin } from "../hooks/useLogin";
 import { Eye, EyeOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   getAccessToken,
   getRefreshToken,
   isAccessTokenValid,
   isRefreshTokenValid,
 } from "../utils";
-import { useNavigate } from "react-router-dom";
 import { captureRedirectUrlOnce, REDIRECT_KEY } from "../utils/url.handler";
+import { useContinueSession } from "../hooks/useContinueSession";
 
 export default function Login() {
   const { login, loading, error } = useLogin();
@@ -16,7 +17,15 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const capturedRedirect = useMemo(() => captureRedirectUrlOnce(), []);
+
+  const {
+    isModalOpen,
+    isBusy,
+    interceptSubmitIfNeeded,
+    confirmContinue,
+    cancelContinue,
+    getDestino,
+  } = useContinueSession();
 
   function logout() {
     localStorage.removeItem("access_token");
@@ -28,28 +37,37 @@ export default function Login() {
   }
 
   useEffect(() => {
-    const dest = capturedRedirect;
-    console.log("dest", dest);
+    const captured = captureRedirectUrlOnce();
+    console.log("[LOGIN] captureRedirectUrlOnce:", captured);
+
+    const dest = sessionStorage.getItem(REDIRECT_KEY);
+    console.log("[LOGIN] dest session:", dest);
 
     const accessToken = getAccessToken();
     if (!accessToken) return;
 
     if (!isAccessTokenValid()) {
-      console.log("Token Invalido", accessToken);
-      if (!isRefreshTokenValid()) {
-        console.log("resfresh", getRefreshToken());
-      }
-
+      console.log("[LOGIN] Access inválido");
+      if (!isRefreshTokenValid()) console.log("[LOGIN] Refresh inválido:", getRefreshToken());
       logout();
       return;
     }
 
-    // if (parsedDest) window.location.href = dest; //aca deberia estar el repreguntar si continuar con la sesion antes de mandar a este dest
+    // Si está logueado y NO hay redirect, va a home
     if (!dest) navigate("/home", { replace: true });
-  }, [capturedRedirect, navigate]);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log("[LOGIN] submit");
+
+    // 1) si aplica “continuar sesión para portal”, abre modal y corta
+    const intercepted = interceptSubmitIfNeeded();
+    console.log("[LOGIN] intercepted:", intercepted);
+    if (intercepted) return;
+
+    // 2) caso normal: login con credenciales
     if (!email || !password) return;
     await login({ email, password });
   };
@@ -90,27 +108,56 @@ export default function Login() {
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60 hover:text-base-content"
-              aria-label={
-                showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
-              }
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
 
-          {error && (
-            <p className="text-error text-sm mt-3 text-center">{error}</p>
-          )}
+          {error && <p className="text-error text-sm mt-3 text-center">{error}</p>}
 
           <button
             type="submit"
             className="btn btn-primary w-full mt-4"
-            disabled={loading}
+            disabled={loading || isBusy}
           >
-            {loading ? "Ingresando..." : "Login"}
+            {loading || isBusy ? "Ingresando..." : "Login"}
           </button>
         </form>
       </div>
+
+      <dialog className={`modal ${isModalOpen ? "modal-open" : ""}`}>
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Continuar sesión</h3>
+          <p className="py-4">Hay una sesión válida. ¿Volver al portal?</p>
+
+          <p className="text-xs opacity-70 break-all">Destino: {getDestino() ?? "-"}</p>
+
+          <div className="modal-action">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={confirmContinue}
+              disabled={isBusy}
+            >
+              Continuar
+            </button>
+
+            <button
+              type="button"
+              className="btn"
+              onClick={cancelContinue}
+              disabled={isBusy}
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={cancelContinue}>close</button>
+        </form>
+      </dialog>
     </div>
   );
 }
