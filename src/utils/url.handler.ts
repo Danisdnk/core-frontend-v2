@@ -40,8 +40,6 @@ export function captureRedirectUrlOnce(): string | null {
   }
 
   const normalized = parsed.toString();
-  sessionStorage.setItem(REDIRECT_KEY, normalized);
-  log("redirectUrl guardado en sessionStorage:", normalized);
   return normalized;
 }
 

@@ -8,11 +8,7 @@ import {
   isRefreshTokenValid,
 } from "../utils";
 import { useNavigate } from "react-router-dom";
-import {
-  captureRedirectUrlOnce,
-  REDIRECT_KEY,
-  safeUrl,
-} from "../utils/url.handler";
+import { captureRedirectUrlOnce, REDIRECT_KEY } from "../utils/url.handler";
 
 export default function Login() {
   const { login, loading, error } = useLogin();
@@ -32,8 +28,8 @@ export default function Login() {
   }
 
   useEffect(() => {
-    const dest = capturedRedirect || sessionStorage.getItem(REDIRECT_KEY);
-    const parsedDest = dest ? safeUrl(dest) : null;
+    const dest = capturedRedirect;
+    console.log("dest", dest);
 
     const accessToken = getAccessToken();
     if (!accessToken) return;
@@ -48,8 +44,8 @@ export default function Login() {
       return;
     }
 
-    // if (parsedDest) window.location.href = parsedDest; //aca deberia estar el repreguntar si continuar con la sesion antes de mandar a este dest
-    if (!parsedDest) navigate("/home", { replace: true });
+    // if (parsedDest) window.location.href = dest; //aca deberia estar el repreguntar si continuar con la sesion antes de mandar a este dest
+    if (!dest) navigate("/home", { replace: true });
   }, [capturedRedirect, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
