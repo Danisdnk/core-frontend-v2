@@ -29,8 +29,7 @@ export default function Login() {
     }
 
     // if (dest) window.location.href = dest; //aca deberia estar el repreguntar si continuar con la sesion antes de mandar a este dest
-    if (dest) console.log(dest);
-    navigate("/home", { replace: true });
+    if (!dest) navigate("/home", { replace: true });
   }, [capturedRedirect, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
