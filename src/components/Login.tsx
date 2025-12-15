@@ -1,12 +1,36 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLogin } from "../hooks/useLogin";
-// import banner from "../assets/bf.png";
+import { Eye, EyeOff } from "lucide-react";
+import { getAccessToken, isAccessTokenValid } from "../utils";
+import { useNavigate } from "react-router-dom";
+import { captureRedirectUrlOnce, REDIRECT_KEY } from "../utils/url.handler";
 
 export default function Login() {
   const { login, loading, error } = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+  const capturedRedirect = useMemo(() => captureRedirectUrlOnce(), []);
+  useEffect(() => {
+    const dest = capturedRedirect || sessionStorage.getItem(REDIRECT_KEY);
+
+    const accessToken = getAccessToken();
+    if (!accessToken) return;
+
+    if (!isAccessTokenValid()) {
+      console.log("Token Invalido", accessToken);
+
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("token_type");
+      localStorage.removeItem("expires_in");
+      return;
+    }
+
+    if (dest) window.location.href = dest; //aca deberia estar el repreguntar si continuar con la sesion antes de mandar a este dest
+    if (!dest) navigate("/home", { replace: true });
+  }, [capturedRedirect, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +78,7 @@ export default function Login() {
                 showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
               }
             >
-              {showPassword ? "🙈" : "👁️"}
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
 

@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  appendToken,
+  captureRedirectUrlOnce,
+  log,
+  safeUrl,
+  REDIRECT_KEY,
+} from "../utils/url.handler";
 
 interface LoginCredentials {
   email: string;
@@ -10,57 +17,6 @@ interface UseLoginReturn {
   login: (credentials: LoginCredentials) => Promise<void>;
   loading: boolean;
   error: string | null;
-}
-
-const REDIRECT_KEY = "post_login_redirect_url";
-
-function log(...args: any[]) {
-  console.log("[CORE-LOGIN]", ...args);
-}
-
-function readRedirectUrlParam(): string | null {
-  const qs = new URLSearchParams(window.location.search);
-  const raw = qs.get("redirectUrl");
-  if (!raw) return null;
-  try {
-    const once = decodeURIComponent(raw);
-    return once;
-  } catch {
-    return raw;
-  }
-}
-
-function safeUrl(raw: string): URL | null {
-  try {
-    const u = new URL(raw);
-    if (!u.pathname) u.pathname = "/";
-    return u;
-  } catch {
-    return null;
-  }
-}
-
-function appendToken(dest: string, token: string) {
-  const u = new URL(dest);
-  u.searchParams.set("JWT", token);
-  return u.toString();
-}
-
-function captureRedirectUrlOnce(): string | null {
-  const incoming = readRedirectUrlParam();
-  log("redirectUrl param (decoded):", incoming);
-  if (!incoming) return null;
-
-  const parsed = safeUrl(incoming);
-  if (!parsed) {
-    log("redirectUrl inválido (no parsea como URL). Se ignora.");
-    return null;
-  }
-
-  const normalized = parsed.toString();
-  sessionStorage.setItem(REDIRECT_KEY, normalized);
-  log("redirectUrl guardado en sessionStorage:", normalized);
-  return normalized;
 }
 
 export function useLogin(): UseLoginReturn {
