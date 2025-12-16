@@ -8,13 +8,16 @@ import {
   isAccessTokenValid,
   isRefreshTokenValid,
 } from "../utils";
-import { captureRedirectUrlOnce, REDIRECT_KEY } from "../utils/url.handler";
+import { captureRedirectUrlOnce, logoutLocal } from "../utils/url.handler";
 import { useContinueSession } from "../hooks/useContinueSession";
 
 export default function Login() {
   const { login, loading, error } = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [welcome, setWelcome] = useState(false);
+  const [userLoggedOut, setUserLoggedOut] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
@@ -24,42 +27,46 @@ export default function Login() {
     interceptSubmitIfNeeded,
     confirmContinue,
     cancelContinue,
-    getDestino,
   } = useContinueSession();
 
-  function logout() {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("token_type");
-    localStorage.removeItem("expires_in");
-    sessionStorage.removeItem("external_access_token");
-    sessionStorage.removeItem(REDIRECT_KEY);
-  }
-
   useEffect(() => {
+    // Si el usuario ya eligió "No soy yo", no vuelvas a activar welcome automáticamente
+    if (userLoggedOut) return;
+
     const captured = captureRedirectUrlOnce();
     console.log("[LOGIN] captureRedirectUrlOnce:", captured);
 
-    const dest = sessionStorage.getItem(REDIRECT_KEY);
-    console.log("[LOGIN] dest session:", dest);
-
     const accessToken = getAccessToken();
-    if (!accessToken) return;
 
-    if (!isAccessTokenValid()) {
+    // Si no hay token, asegurar que esté la pantalla de login normal
+    if (!accessToken) {
+      setWelcome(false);
+      return;
+    }
+
+    const accessValid = isAccessTokenValid();
+
+    // Welcome SOLO si hay sesión válida (y userLoggedOut sigue false)
+    setWelcome(accessValid);
+
+    if (!accessValid) {
       console.log("[LOGIN] Access inválido");
-      if (!isRefreshTokenValid()) console.log("[LOGIN] Refresh inválido:", getRefreshToken());
-      logout();
+
+      if (isRefreshTokenValid()) {
+        console.log("[LOGIN] Refresh válido:", getRefreshToken());
+        // acá todavía no refresh real; solo log
+      } else {
+        logoutLocal();
+      }
       return;
     }
 
     // Si está logueado y NO hay redirect, va a home
-    if (!dest) navigate("/home", { replace: true });
-  }, [navigate]);
+    if (!captured) navigate("/home", { replace: true });
+  }, [navigate, userLoggedOut]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     console.log("[LOGIN] submit");
 
     // 1) si aplica “continuar sesión para portal”, abre modal y corta
@@ -72,7 +79,53 @@ export default function Login() {
     await login({ email, password });
   };
 
-  return (
+  const handleUnloggeed = async () => {
+    setWelcome(false);
+    setUserLoggedOut(true);
+    logoutLocal();
+  };
+
+  const handleSubmitWelcome = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("[LOGIN] submit welcome");
+
+    if (!email || !password) return;
+    await login({ email, password });
+  };
+
+  return welcome ? (
+    <div className="relative flex justify-center items-center min-h-screen bg-base-200">
+      <div className="relative z-10 flex justify-center items-center w-full">
+        <form
+          onSubmit={handleSubmitWelcome}
+          className="fieldset bg-base-100 border-base-300 rounded-box border p-6 w-80 shadow-md"
+        >
+          <legend className="fieldset-legend text-lg font-semibold mb-3">
+            Bienvenido devuelta Fulanito!
+          </legend>
+
+          {error && <p className="text-error text-sm mt-3 text-center">{error}</p>}
+
+          <button
+            type="submit"
+            className="btn btn-primary w-full mt-4"
+            disabled={loading || isBusy}
+          >
+            {loading || isBusy ? "Ingresando..." : "Continuar con mi sesion"}
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-primary w-full mt-4"
+            disabled={loading || isBusy}
+            onClick={handleUnloggeed}
+          >
+            No soy yo, chauuu
+          </button>
+        </form>
+      </div>
+    </div>
+  ) : (
     <div className="relative flex justify-center items-center min-h-screen bg-base-200">
       <div className="relative z-10 flex justify-center items-center w-full">
         <form
@@ -131,7 +184,9 @@ export default function Login() {
           <h3 className="font-bold text-lg">Continuar sesión</h3>
           <p className="py-4">Hay una sesión válida. ¿Volver al portal?</p>
 
-          <p className="text-xs opacity-70 break-all">Destino: {getDestino() ?? "-"}</p>
+          <p className="text-xs opacity-70 break-all">
+            Destino: {captureRedirectUrlOnce() ?? "-"}
+          </p>
 
           <div className="modal-action">
             <button
