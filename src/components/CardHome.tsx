@@ -13,7 +13,7 @@ import {
 // import Carousel from "./Carousel";
 import { Card } from "./Card";
 import Footer from "./Footer";
-import { getUserFromToken, filterCardsByRole } from "../utils";
+import { getUserFromToken, filterCardsByRole, decodeJwtUtf8 } from "../utils";
 import logo from "../assets/uadelogo.png";
 
 interface CardData {
@@ -38,6 +38,9 @@ export default function Home() {
   ];
 
   const visibleCards = useMemo(() => filterCardsByRole(role, cards), [role]);
+
+  const tokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const jwtPayload = tokenFromStorage ? decodeJwtUtf8(tokenFromStorage) : null;
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
@@ -73,20 +76,25 @@ export default function Home() {
               <User className="w-6 h-6 text-white" />
             </div>
 
-            <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-48 mt-2 z-[60]">
-              <li>
-                <button onClick={() => (window.location.href = "/perfil")} className="justify-start">
-                  <User className="w-4 h-4" />
-                  Perfil
-                </button>
+            <ul tabIndex={0} className="dropdown-content p-2 shadow bg-base-100 rounded-box w-52 mt-2 z-[60]">
+              <li className="w-full">
+                <div className="text-sm flex flex-col gap-1 px-3 py-2 text-left">
+                  <div className="font-medium">{jwtPayload?.name ?? name}</div>
+                  {jwtPayload?.email && (
+                    <div className="text-xs opacity-80 break-words whitespace-normal max-w-[12rem]"><span className="font-semibold">Email:</span> {jwtPayload.email}</div>
+                  )}
+                  {jwtPayload?.role && <div className="text-xs opacity-80"><span className="font-semibold">Rol:</span> {jwtPayload.role}</div>}
+                  {jwtPayload?.career?.name && <div className="text-xs opacity-80"><span className="font-semibold">Carrera:</span> {jwtPayload.career.name}</div>}
+                </div>
               </li>
-              <li>
+              <li className="px-3 py-1 menu">
                 <button onClick={handleLogout} className="justify-start text-error">
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-4 h-4 inline-block mr-2" />
                   Cerrar sesión
                 </button>
               </li>
             </ul>
+            
           </div>
         </div>
       </nav>
