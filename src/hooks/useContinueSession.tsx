@@ -6,31 +6,21 @@ import {
   isAccessTokenValid,
   isRefreshTokenValid,
 } from "../utils";
-import { REDIRECT_KEY } from "../utils/url.handler";
+import { captureRedirectUrlOnce, logoutLocal, withToken } from "../utils/url.handler";
 
 const API_BASE = "https://jtseq9puk0.execute-api.us-east-1.amazonaws.com/api";
 
 type Status = "idle" | "needs_confirm" | "refreshing" | "done" | "error";
 
-function logoutLocal() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  localStorage.removeItem("token_type");
-  localStorage.removeItem("expires_in");
-  sessionStorage.removeItem("external_access_token");
-  sessionStorage.removeItem(REDIRECT_KEY);
-}
 
-function withToken(destino: string, token: string): string {
-  const u = new URL(destino);
-  u.searchParams.set("access_token", token);
-  return u.toString();
-}
 
 async function refreshAccessToken(): Promise<string | null> {
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
   if (!accessToken || !refreshToken) return null;
+
+  console.log(refreshToken,"refresh")
+
 
   const resp = await fetch(`${API_BASE}/auth/refresh`, {
     method: "POST",
@@ -42,30 +32,24 @@ async function refreshAccessToken(): Promise<string | null> {
   });
 
   const data = await resp.json().catch(() => null);
-  const newAccess =
-    data?.access_token ||
-    data?.accessToken ||
-    data?.token ||
-    data?.data?.access_token ||
-    null;
-
+  const newAccess =  data?.access_token || data?.accessToken || data?.token ||data?.data?.access_token || null;
   if (!resp.ok || !newAccess) return null;
   return String(newAccess);
+
 }
 
 export function useContinueSession() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
+   let destino = captureRedirectUrlOnce();
 
   const interceptSubmitIfNeeded = useCallback((): boolean => {
     setError(null);
 
-    const destino = sessionStorage.getItem(REDIRECT_KEY);
-
     console.log("[CONTINUE] destino:", destino);
-    console.log("[CONTINUE] access:", !!getAccessToken(), "valid:", isAccessTokenValid());
-    console.log("[CONTINUE] refresh:", !!getRefreshToken(), "valid:", isRefreshTokenValid());
+    console.log("[CONTINUE] access:", getAccessToken(), "valid:", isAccessTokenValid());
+    console.log("[CONTINUE] refresh:", getRefreshToken(), "valid:", isRefreshTokenValid());
 
     if (!destino) return false;
 
@@ -88,8 +72,7 @@ export function useContinueSession() {
   const confirmContinue = useCallback(async () => {
     setError(null);
     setStatus("refreshing");
-
-    const destino = sessionStorage.getItem(REDIRECT_KEY);
+   
     console.log("[CONTINUE] confirmContinue destino:", destino);
 
     if (!destino) {
@@ -111,17 +94,17 @@ export function useContinueSession() {
 
     if (!newAccess) {
       logoutLocal();
-      navigate("/", { replace: true }); 
+      navigate("/", { replace: true });
       return;
     }
 
     localStorage.setItem("access_token", newAccess);
     sessionStorage.setItem("external_access_token", newAccess);
 
-    sessionStorage.removeItem(REDIRECT_KEY);
 
     const target = withToken(destino, newAccess);
     console.log("[CONTINUE] redirect portal:", target);
+   
     window.location.href = target;
 
     setStatus("done");
@@ -131,7 +114,7 @@ export function useContinueSession() {
     console.log("[CONTINUE] cancel -> logout + /");
     logoutLocal();
     setStatus("idle");
-    navigate("/", { replace: true }); 
+    navigate("/", { replace: true });
   }, [navigate]);
 
   return {
@@ -141,7 +124,5 @@ export function useContinueSession() {
     isBusy: status === "refreshing",
     interceptSubmitIfNeeded,
     confirmContinue,
-    cancelContinue,
-    getDestino: () => sessionStorage.getItem(REDIRECT_KEY),
-  };
+    cancelContinue  };
 }
