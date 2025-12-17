@@ -6,7 +6,7 @@ export function filterCardsByRole<T extends { title: string }>(
 
   const rules: Record<string, (t: string) => boolean> = {
     ADMINISTRADOR: (t) => !["Portal de alumnos", "Portal docente"].includes(t),
-    DOCENTE: (t) => !["Portal de alumnos","Portal Gestión", "Portal analítica"].includes(t),
+    DOCENTE: (t) => !["Portal de alumnos","Portal Gestión", "Portal analítica", "Portal Biblioteca"].includes(t),
     ALUMNO: (t) => !["Portal docente","Portal Gestión", "Portal analítica"].includes(t),
   };
 
