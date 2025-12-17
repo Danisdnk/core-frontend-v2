@@ -65,6 +65,7 @@ export default function Home() {
   const initialUser = useMemo(() => getUserFromToken(), []);
   const [name, setName] = useState(initialUser.name);
   const role = initialUser.role;
+  const subrol = initialUser.subrol;
 
   const cards: CardData[] = [
     { id: 1, title: "Portal docente", icon: <User className="w-12 h-12 text-primary" />, url: "https://campus-connect-front-docentes.vercel.app" },
@@ -77,7 +78,7 @@ export default function Home() {
     { id: 8, title: "Portal Gestión", icon: <Settings className="w-12 h-12 text-success" />, url: "https://backoffice-production-ui.up.railway.app" },
   ];
 
-  const visibleCards = useMemo(() => filterCardsByRole(role, cards), [role]);
+  const visibleCards = useMemo(() => filterCardsByRole(role, subrol, cards), [role, subrol]);
 
   const tokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const jwtPayload = tokenFromStorage ? decodeJwtUtf8(tokenFromStorage) : null;
