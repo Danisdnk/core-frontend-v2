@@ -46,3 +46,21 @@ export function captureRedirectUrlOnce(): string | null {
 export function log(...args: any[]) {
   console.log("[CORE-LOGIN]", ...args);
 }
+export function logoutLocal() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("token_type");
+  localStorage.removeItem("expires_in");
+  sessionStorage.removeItem("external_access_token");
+  sessionStorage.removeItem(REDIRECT_KEY);
+}
+
+export function withToken(destino: string | null, token: string): string {
+  if (typeof destino !== "string" || destino.trim() === "") {
+    throw new Error("withToken: destino inválido (null o vacío)");
+  }
+
+  const u = new URL(destino);
+  u.searchParams.set("access_token", token);
+  return u.toString();
+}
