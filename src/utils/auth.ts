@@ -33,7 +33,7 @@ export function getRefreshToken(): string | null {
   return localStorage.getItem("refresh_token");
 }
 
-export function getUserFromToken(): { role: string | null; name: string } {
+export function getUserFromToken(): { role: string | null; name: string; subrol: string | null } {
   const token = getAccessToken();
   const payload = token ? decodeJwtPayload(token) : null;
   const role =
@@ -42,7 +42,8 @@ export function getUserFromToken(): { role: string | null; name: string } {
     payload?.Role?.toUpperCase?.() ??
     null;
   const name = payload?.name ?? payload?.nombre ?? "Usuario";
-  return { role, name };
+  const subrol = payload?.subrol ?? null;
+  return { role, name, subrol };
 }
 
 export function decodeJwtUtf8(token: string): JwtPayload | null {
