@@ -61,6 +61,6 @@ export function withToken(destino: string | null, token: string): string {
   }
 
   const u = new URL(destino);
-  u.searchParams.set("access_token", token);
+  u.searchParams.set("JWT", token);
   return u.toString();
 }
