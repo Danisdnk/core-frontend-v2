@@ -137,7 +137,7 @@ export default function Home() {
               <User className="w-6 h-6 text-white" />
             </div>
 
-            <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-56 mt-2 z-[60]">
+            <ul tabIndex={0} className="dropdown-content p-2 shadow bg-base-100 rounded-box w-56 mt-2 z-[60]">
               <li className="w-full">
                 <div className="text-sm flex flex-col gap-1 px-3 py-2 text-left">
                   <div className="font-medium">{jwtPayload?.name ?? name}</div>
@@ -149,23 +149,26 @@ export default function Home() {
                 </div>
               </li>
 
-              {/* DEBUG (Opción A) */}
-              <li>
-                <button onClick={expiry.forceOpen} className="justify-start">
-                  Forzar modal (debug)
-                </button>
-              </li>
-              <li>
-                <button onClick={expiry.forceCheck} className="justify-start">
-                  Forzar check (debug)
-                </button>
-              </li>
-
-              <li>
-                <button onClick={handleLogout} className="justify-start text-error">
-                  <LogOut className="w-4 h-4 inline-block mr-2" />
-                  Cerrar sesión
-                </button>
+              {/* Action buttons kept with DaisyUI "menu" styling */}
+              <li className="p-0">
+                <ul className="menu p-2">
+                  <li>
+                    <button onClick={expiry.forceOpen} className="justify-start w-full text-left">
+                      Forzar modal (debug)
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={expiry.forceCheck} className="justify-start w-full text-left">
+                      Forzar check (debug)
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={handleLogout} className="justify-start text-error w-full text-left">
+                      <LogOut className="w-4 h-4 inline-block mr-2" />
+                      Cerrar sesión
+                    </button>
+                  </li>
+                </ul>
               </li>
             </ul>
             
