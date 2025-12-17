@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   User,
   BookOpen,
@@ -10,11 +10,17 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-// import Carousel from "./Carousel";
 import { Card } from "./Card";
 import Footer from "./Footer";
-import { getUserFromToken, filterCardsByRole, decodeJwtUtf8 } from "../utils";
+import {
+  getUserFromToken,
+  filterCardsByRole,
+  getAccessToken,
+  isAccessTokenValid,
+  decodeJwtUtf8
+} from "../utils";
 import logo from "../assets/uadelogo.png";
+import { useTokenExpiryModal } from "../hooks/useTokenExpiryModal";
 
 interface CardData {
   id: number;
@@ -24,7 +30,41 @@ interface CardData {
 }
 
 export default function Home() {
-  const { role, name } = useMemo(() => getUserFromToken(), []);
+  // ✅ Guard: si no hay token o es inválido -> login
+  useEffect(() => {
+    const token = getAccessToken();
+    console.log("[HOME] access_token exists:", !!token);
+
+    if (!token) {
+      console.log("[HOME] no token -> redirect /");
+      window.location.href = "/";
+      return;
+    }
+
+    const valid = isAccessTokenValid();
+    console.log("[HOME] token valid:", valid);
+
+    if (!valid) {
+      console.log("[HOME] token inválido -> redirect /");
+      window.location.href = "/";
+      return;
+    }
+
+    const u = getUserFromToken();
+    console.log("[HOME] user from token:", u);
+
+    if (!u?.role) {
+      console.log("[HOME] payload sin role -> redirect /");
+      window.location.href = "/";
+      return;
+    }
+  }, []);
+
+  // ⚠️ no uses useMemo([]) para el nombre si el token puede cambiar por refresh.
+  // Usamos un state inicial y lo actualizamos después de renew.
+  const initialUser = useMemo(() => getUserFromToken(), []);
+  const [name, setName] = useState(initialUser.name);
+  const role = initialUser.role;
 
   const cards: CardData[] = [
     { id: 1, title: "Portal docente", icon: <User className="w-12 h-12 text-primary" />, url: "https://campus-connect-front-docentes.vercel.app" },
@@ -44,19 +84,40 @@ export default function Home() {
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("token_type");
+    localStorage.removeItem("expires_in");
+    sessionStorage.removeItem("external_access_token");
     window.location.href = "/";
   };
 
   const openExternal = (baseUrl: string) => {
     const token = localStorage.getItem("access_token");
 
-    if (token) {
-      sessionStorage.setItem("external_access_token", token);
+    if (!token) {
+      console.log("[HOME] openExternal sin token -> /");
+      window.location.href = "/";
+      return;
     }
 
-    const target = `${baseUrl}?JWT=${encodeURIComponent(token ?? "")}`;
-
+    sessionStorage.setItem("external_access_token", token);
+    const target = `${baseUrl}?JWT=${encodeURIComponent(token)}`;
     window.location.href = target;
+  };
+
+  // ✅ Modal automático cuando está por expirar + debug helpers
+  const expiry = useTokenExpiryModal({
+    thresholdSeconds: 120,
+    checkEveryMs: 15000,
+    onLogoutRedirect: () => {
+      window.location.href = "/";
+    },
+  });
+
+  const handleRenew = async () => {
+    await expiry.renew();
+    const u = getUserFromToken();
+    setName(u.name);
   };
 
   return (
@@ -76,7 +137,7 @@ export default function Home() {
               <User className="w-6 h-6 text-white" />
             </div>
 
-            <ul tabIndex={0} className="dropdown-content p-2 shadow bg-base-100 rounded-box w-52 mt-2 z-[60]">
+            <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-56 mt-2 z-[60]">
               <li className="w-full">
                 <div className="text-sm flex flex-col gap-1 px-3 py-2 text-left">
                   <div className="font-medium">{jwtPayload?.name ?? name}</div>
@@ -87,7 +148,20 @@ export default function Home() {
                   {jwtPayload?.career?.name && <div className="text-xs opacity-80"><span className="font-semibold">Carrera:</span> {jwtPayload.career.name}</div>}
                 </div>
               </li>
-              <li className="px-3 py-1 menu">
+
+              {/* DEBUG (Opción A) */}
+              <li>
+                <button onClick={expiry.forceOpen} className="justify-start">
+                  Forzar modal (debug)
+                </button>
+              </li>
+              <li>
+                <button onClick={expiry.forceCheck} className="justify-start">
+                  Forzar check (debug)
+                </button>
+              </li>
+
+              <li>
                 <button onClick={handleLogout} className="justify-start text-error">
                   <LogOut className="w-4 h-4 inline-block mr-2" />
                   Cerrar sesión
@@ -98,17 +172,9 @@ export default function Home() {
           </div>
         </div>
       </nav>
-      {/* Lo saco por ahora, yo no lo agregaria */}
-      {/* <div className="px-6 pt-6">
-        <div className="rounded-xl overflow-hidden shadow-md">
-          <Carousel />
-        </div>
-      </div> */}
 
-      {/* HERO institucional */}
       <section className="px-6 pt-6">
         <div className="relative overflow-hidden rounded-2xl shadow-md">
-          {/* Imagen */}
           <img
             src="https://keystoneacademic-res.cloudinary.com/image/upload/element/11/117284_UADEDia4.jpg"
             alt="UADE"
@@ -116,11 +182,7 @@ export default function Home() {
             loading="lazy"
             referrerPolicy="no-referrer"
           />
-
-          {/* Overlay para contraste */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/55 to-transparent" />
-
-          {/* Contenido */}
           <div className="absolute inset-0 flex items-center">
             <div className="px-6 py-6 sm:px-10 max-w-3xl">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
@@ -134,6 +196,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+
       <div className="py-10 px-6 flex-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
           {visibleCards.map((card) => (
@@ -149,6 +212,54 @@ export default function Home() {
       </div>
 
       <Footer />
+
+      {/* ✅ Modal DaisyUI (expiración) */}
+      <dialog className={`modal ${expiry.isOpen ? "modal-open" : ""}`}>
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Sesión por expirar</h3>
+
+          <p className="py-3">
+            Quedan aproximadamente <b>{expiry.secondsLeft}</b> segundos.
+          </p>
+
+          {expiry.error && (
+            <p className="text-error text-sm break-words">{expiry.error}</p>
+          )}
+
+          <div className="modal-action">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleRenew}
+              disabled={expiry.isBusy}
+            >
+              {expiry.isBusy ? "Renovando..." : "Renovar sesión"}
+            </button>
+
+            <button
+              type="button"
+              className="btn"
+              onClick={expiry.logout}
+              disabled={expiry.isBusy}
+            >
+              Cerrar sesión
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={expiry.close}
+              disabled={expiry.isBusy}
+            >
+              Más tarde
+            </button>
+          </div>
+        </div>
+
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={expiry.close}>close</button>
+        </form>
+      </dialog>
     </div>
   );
 }
